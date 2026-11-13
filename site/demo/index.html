@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OpenMantel demo: what a frame shows</title>
+<link rel="icon" href="../favicon.ico">
+<meta name="description" content="A demo of an OpenMantel picture frame, playing 25 sample photos in your browser exactly as a frame on the wall would.">
+<link rel="canonical" href="https://openmantel.com/demo/">
+<meta property="og:title" content="OpenMantel demo">
+<meta property="og:description" content="See what an OpenMantel picture frame shows, with 25 sample photos.">
+<meta property="og:image" content="https://openmantel.com/og-image.png">
+<meta property="og:url" content="https://openmantel.com/demo/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#000000">
+<link rel="preload" as="image" href="photos/01-1920.webp">
+<style>
+/* The look is the real frame's (app/pages/index.vue): whole photos on a blurred backdrop, a
+   one-second crossfade, and a caption band. Only the bar at the top is the demo's own. */
+* { box-sizing: border-box; margin: 0; }
+html, body { height: 100%; background: #000; }
+body { font-family: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", "Nimbus Sans", sans-serif; color: #fff; }
+.frame { position: fixed; inset: 0; overflow: hidden; background: #000; cursor: pointer; }
+.frame.idle { cursor: none; }
+.slide { position: absolute; inset: 0; opacity: 0; transition: opacity 1s ease; }
+.slide.visible { opacity: 1; }
+.photo, .backdrop { position: absolute; inset: 0; width: 100%; height: 100%; }
+.photo { object-fit: contain; object-position: center; }
+.backdrop { object-fit: cover; filter: blur(40px) brightness(0.7); transform: scale(1.15); }
+.caption {
+  position: absolute; inset-inline: 0; bottom: 0; padding: 1.2vmin 3vw;
+  background: rgb(0 0 0 / 0.6); text-align: center;
+  font-size: clamp(16px, 2.6vmin, 60px); font-weight: 500; line-height: 1.25;
+}
+.caption:empty, .info-open .caption { display: none; }
+
+.info {
+  position: absolute; left: 3vmin; bottom: 3vmin; max-width: min(70vw, 60rem);
+  padding: 2.4vmin 3vmin; border-radius: 1.2vmin;
+  background: rgb(0 0 0 / 0.72); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  font-size: clamp(15px, 2.1vmin, 44px); line-height: 1.35; cursor: default;
+}
+.info[hidden] { display: none; }
+.info-caption { font-size: 1.35em; font-weight: 600; margin-bottom: 0.6em; }
+.info-caption:empty { display: none; }
+.info-rows { display: grid; grid-template-columns: auto 1fr; gap: 0.3em 1.2em; }
+.info-rows dt { color: rgb(255 255 255 / 0.65); }
+.info-hint { margin-top: 0.8em; font-size: 0.75em; color: rgb(255 255 255 / 0.6); }
+
+/* Demo only: a way back, shown when the pointer moves and gone again when it rests. */
+.bar {
+  position: absolute; top: 0; inset-inline: 0; display: flex; flex-wrap: wrap; align-items: center; gap: .5rem;
+  padding: max(.75rem, env(safe-area-inset-top)) max(.75rem, env(safe-area-inset-right)) 2rem max(.75rem, env(safe-area-inset-left));
+  background: linear-gradient(rgb(0 0 0 / 0.6), transparent);
+  font-size: 15px; transition: opacity .4s ease; cursor: default;
+}
+.idle .bar:not(:focus-within) { opacity: 0; pointer-events: none; }
+.bar p { flex: 1 1 14rem; text-align: center; text-shadow: 0 1px 3px #000; }
+.bar a, .bar button {
+  font: inherit; font-weight: 700; color: #fff; text-decoration: none; cursor: pointer;
+  padding: .5rem .9rem; border: 0; border-radius: .4rem; background: rgb(0 0 0 / 0.55);
+  box-shadow: inset 0 0 0 2px rgb(255 255 255 / 0.35);
+}
+.bar a:hover, .bar button:hover { box-shadow: inset 0 0 0 2px #fff; }
+.bar a:focus-visible, .bar button:focus-visible { outline: 3px solid #f2b134; outline-offset: 2px; }
+.bar a.own { background: #f2b134; color: #10181c; box-shadow: none; }
+.bar [hidden] { display: none; }
+@media (max-width: 600px) { .bar p { order: 9; flex-basis: 100%; } }
+
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .slide, .bar { transition: none; } }
+</style>
+</head>
+<body>
+<main class="frame" id="frame">
+  <h1 class="sr">OpenMantel demo: a picture frame playing 25 sample photos</h1>
+  <div class="slide visible" data-slide>
+    <img class="backdrop" alt="" src="photos/01-640.webp">
+    <img class="photo" alt="A sunset over a green field and a row of trees" src="photos/01-1920.webp">
+    <p class="caption">Sunset over the fields</p>
+  </div>
+  <div class="slide" data-slide aria-hidden="true">
+    <img class="backdrop" alt="">
+    <img class="photo" alt="">
+    <p class="caption"></p>
+  </div>
+
+  <section class="info" id="info" role="dialog" aria-label="About this photo" hidden>
+    <p class="info-caption" id="info-caption"></p>
+    <dl class="info-rows" id="info-rows"></dl>
+    <p class="info-hint">Tap again to close. Sample photos from Lorem Picsum, sourced from Unsplash.</p>
+  </section>
+
+  <div class="bar" id="bar">
+    <a href="../">&larr; OpenMantel</a>
+    <p>This is what a frame shows. Arrows change photos; tap one for its details.</p>
+    <button type="button" id="pause" aria-pressed="false">Pause</button>
+    <button type="button" id="fullscreen" hidden>Full screen</button>
+    <a class="own" href="../#install">Host your own</a>
+  </div>
+  <noscript><p class="caption">The demo needs JavaScript to change photos. <a href="../" style="color:#fff">Back to OpenMantel</a></p></noscript>
+</main>
+
+<script>
+// [caption, description for screen readers, width, height, tags]. Files are photos/NN-1920.webp
+// (shown) and photos/NN-640.webp (the blurred backdrop), numbered in this order.
+const PHOTOS = [
+  ['Sunset over the fields', 'A sunset over a green field and a row of trees', 2400, 1600, 'sunset, landscape'],
+  ['Spring blossoms', 'Pink blossoms against a blue sky', 1600, 2400, 'flowers, spring'],
+  ['', 'Driftwood and rocks on the shore of a calm blue sea', 2400, 1600, 'water, travel'],
+  ['The village above the sea', 'A whitewashed hillside village with a windmill', 2000, 2000, 'travel, city'],
+  ['The waterfall trail', 'A thin waterfall dropping into a rocky green gorge', 2400, 1600, 'landscape, hiking'],
+  ['', 'Golden grass seed heads bending in the wind', 3000, 1000, 'nature, fall'],
+  ['Above the snow line', 'Snow-covered mountain peaks under a deep blue sky', 1600, 2400, 'mountains, travel'],
+  ['One small boat', 'A small red and white boat alone on turquoise water', 2400, 1600, 'water, summer'],
+  ['The lighthouse', 'A black and white photo of a lighthouse on a rocky shore', 2000, 2000, 'travel'],
+  ['', 'A misty green valley with a stream running through it', 2400, 1600, 'landscape, travel'],
+  ['Palms in the haze', 'Two tall palm trees on a hazy beach', 1600, 2400, 'beach, summer'],
+  ['The house on the hill', 'A farmhouse ringed by cypress trees on top of a ploughed hill', 2400, 1600, 'landscape, summer'],
+  ['', 'A dark pine forest under a fading orange sky', 1000, 2400, 'nature, sunset'],
+  ['Evening at the lake', 'Tall grass in front of a lake with mountains behind', 2400, 1600, 'mountains, water'],
+  ['', 'A group of people on a hilltop under bright clouds', 2000, 2000, 'hiking, summer'],
+  ['Bicycle by the old barn', 'A green bicycle leaning against a weathered wooden barn', 3000, 1000, 'travel'],
+  ['', 'A rocky headland seen over flowering bushes on a grey day', 1600, 2400, 'water, travel'],
+  ['The city at night', 'A domed cathedral and a bridge lit up across a river at night', 2400, 1600, 'night, city'],
+  ['', 'A rocky stream bed between bright green trees', 1600, 2400, 'nature, hiking'],
+  ['Across the bay', 'Pine trees in front of a blue bay with distant mountains', 2400, 1600, 'landscape, travel'],
+  ['', 'A lake between low hills, with dry grass in front', 3000, 1000, 'water, fall'],
+  ['Thistles above the valley', 'Dried thistles in front of a wide valley of rolling hills', 2400, 1600, 'flowers, landscape'],
+  ['', 'A mossy forest floor in warm evening light', 1600, 2400, 'nature, spring'],
+  ['Watching the tide come in', 'A person standing on a cliff watching waves at sunset', 2400, 1600, 'sunset, water'],
+  ['', 'Dark rocks on a sandy beach with islands on the horizon', 2400, 1600, 'beach, travel'],
+]
+const INTERVAL_MS = 6000 // A real frame holds each photo for a minute. A visitor won't.
+const INFO_TIMEOUT_MS = 2 * 60 * 1000
+const IDLE_MS = 3500
+
+const frame = document.getElementById('frame')
+const slides = [...document.querySelectorAll('[data-slide]')]
+const info = document.getElementById('info')
+const pauseButton = document.getElementById('pause')
+const fullscreenButton = document.getElementById('fullscreen')
+
+let active = 0 // Which of the two slides is showing.
+let current = 0 // Which photo is on it.
+let timer, infoTimer, idleTimer
+let paused = false
+let epoch = 0 // Bumped by every change of photo, so one still loading from before is dropped.
+
+const file = (index, size) => `photos/${String(index + 1).padStart(2, '0')}-${size}.webp`
+
+function preload(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+    image.onload = resolve
+    image.onerror = reject
+    image.src = src
+  })
+}
+
+function schedule(ms = INTERVAL_MS) {
+  clearTimeout(timer)
+  if (!paused && info.hidden && !document.hidden) timer = setTimeout(() => show(current + 1), ms)
+}
+
+async function show(index) {
+  index = (index + PHOTOS.length) % PHOTOS.length
+  const since = ++epoch
+  clearTimeout(timer)
+  try {
+    await Promise.all([preload(file(index, 1920)), preload(file(index, 640))])
+  }
+  catch {
+    // Offline or a missing file. Try the one after it, without spinning.
+    if (since === epoch) timer = setTimeout(() => show(index + 1), 2000)
+    return
+  }
+  if (since !== epoch) return
+  closeInfo(false)
+  const [caption, alt] = PHOTOS[index]
+  const hidden = slides[1 - active]
+  hidden.querySelector('.backdrop').src = file(index, 640)
+  const photo = hidden.querySelector('.photo')
+  photo.src = file(index, 1920)
+  photo.alt = alt
+  hidden.querySelector('.caption').textContent = caption
+  slides[active].classList.remove('visible')
+  slides[active].setAttribute('aria-hidden', 'true')
+  hidden.classList.add('visible')
+  hidden.removeAttribute('aria-hidden')
+  active = 1 - active
+  current = index
+  preload(file(index + 1 === PHOTOS.length ? 0 : index + 1, 1920)).catch(() => undefined)
+  schedule()
+}
+
+function openInfo() {
+  const [caption, , width, height, tags] = PHOTOS[current]
+  document.getElementById('info-caption').textContent = caption
+  const rows = document.getElementById('info-rows')
+  rows.replaceChildren()
+  for (const [label, value] of [['Size', `${width} × ${height}, ${(width * height / 1e6).toFixed(1)} MP`], ['Tags', tags]]) {
+    const term = document.createElement('dt')
+    term.textContent = label
+    const detail = document.createElement('dd')
+    detail.textContent = value
+    rows.append(term, detail)
+  }
+  info.hidden = false
+  frame.classList.add('info-open')
+  clearTimeout(timer) // Held on this photo until closed, as on a real frame.
+  clearTimeout(infoTimer)
+  infoTimer = setTimeout(closeInfo, INFO_TIMEOUT_MS)
+}
+
+function closeInfo(resume = true) {
+  if (info.hidden) return
+  clearTimeout(infoTimer)
+  info.hidden = true
+  frame.classList.remove('info-open')
+  if (resume) schedule()
+}
+
+const toggleInfo = () => (info.hidden ? openInfo() : closeInfo())
+
+function setPaused(value) {
+  paused = value
+  pauseButton.textContent = paused ? 'Play' : 'Pause'
+  pauseButton.setAttribute('aria-pressed', String(paused))
+  schedule(paused ? undefined : 0)
+}
+
+/** The bar and the cursor show while the pointer moves, and a frame is all that's left when it rests. */
+function wake() {
+  frame.classList.remove('idle')
+  clearTimeout(idleTimer)
+  idleTimer = setTimeout(() => frame.classList.add('idle'), IDLE_MS)
+}
+
+frame.addEventListener('click', (event) => {
+  if (event.target.closest('.bar')) return
+  if (event.target.closest('.info')) return closeInfo()
+  toggleInfo()
+})
+pauseButton.addEventListener('click', () => setPaused(!paused))
+addEventListener('keydown', (event) => {
+  if (event.metaKey || event.ctrlKey || event.altKey) return
+  wake()
+  const onControl = event.target.closest?.('a, button')
+  if (event.key === 'ArrowRight') show(current + 1)
+  else if (event.key === 'ArrowLeft') show(current - 1)
+  else if (event.key === 'Escape') closeInfo()
+  else if (event.key === 'p') setPaused(!paused)
+  else if ((event.key === 'i' || event.key === 'Enter' || event.key === ' ') && !onControl) {
+    event.preventDefault()
+    toggleInfo()
+  }
+})
+for (const type of ['pointermove', 'pointerdown', 'focusin']) addEventListener(type, wake)
+document.addEventListener('visibilitychange', () => schedule())
+
+if (document.fullscreenEnabled) {
+  fullscreenButton.hidden = false
+  fullscreenButton.addEventListener('click', () => {
+    if (document.fullscreenElement) document.exitFullscreen()
+    else document.documentElement.requestFullscreen().catch(() => undefined)
+  })
+  document.addEventListener('fullscreenchange', () => {
+    fullscreenButton.textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen'
+  })
+}
+
+preload(file(1, 1920)).catch(() => undefined)
+wake()
+schedule()
+</script>
+</body>
+</html>

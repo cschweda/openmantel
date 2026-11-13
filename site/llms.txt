@@ -8,6 +8,7 @@ Key features: start a slideshow on every frame or one; random or sequential orde
 
 ## Docs
 
+- [Demo](https://openmantel.com/demo/): what a frame shows, playing 25 sample photos in the browser
 - [README](https://github.com/cschweda/openmantel#readme): features, screenshots, why it's self-hosted, installation, frame setup, and development
 - [Self-hosting guide](https://github.com/cschweda/openmantel/blob/main/docs/self-hosting.md): homelab and reverse proxy setups, updates, backups, troubleshooting
 - [Design](https://github.com/cschweda/openmantel/blob/main/docs/00-master-design.md): architecture, data model, API, frame client

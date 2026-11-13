@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format is based on 
 
 ## [Unreleased]
 
+### Added
+
+- A demo at [openmantel.com/demo](https://openmantel.com/demo/): 25 sample photos playing in the browser the way a frame shows them, with the blurred backdrop, captions, arrow keys, and tap for details. It's a static page that needs no server, linked from the product page.
+
 ## [0.1.0] - 2026-11-03
 
 The first tagged release. Docker images are published as `0.1.0`, `0.1`, and `latest`.
