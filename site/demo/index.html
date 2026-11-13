@@ -21,7 +21,7 @@
 * { box-sizing: border-box; margin: 0; }
 html, body { height: 100%; background: #000; }
 body { font-family: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", "Nimbus Sans", sans-serif; color: #fff; }
-.frame { position: fixed; inset: 0; overflow: hidden; background: #000; cursor: pointer; }
+.frame { position: fixed; inset: 0; overflow: hidden; background: #000; cursor: pointer; touch-action: pan-y pinch-zoom; -webkit-user-select: none; user-select: none; }
 .frame.idle { cursor: none; }
 .slide { position: absolute; inset: 0; opacity: 0; transition: opacity 1s ease; }
 .slide.visible { opacity: 1; }
@@ -30,7 +30,7 @@ body { font-family: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", "Nimb
 .caption {
   position: absolute; inset-inline: 0; bottom: 0; padding: 1.2vmin 3vw;
   background: rgb(0 0 0 / 0.6); text-align: center;
-  font-size: clamp(16px, 2.6vmin, 60px); font-weight: 500; line-height: 1.25;
+  font-size: clamp(14px, 2.1vmin, 48px); font-weight: 500; line-height: 1.25;
 }
 .caption:empty, .info-open .caption { display: none; }
 
@@ -64,7 +64,8 @@ body { font-family: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", "Nimb
 .bar a:hover, .bar button:hover { box-shadow: inset 0 0 0 2px #fff; }
 .bar a:focus-visible, .bar button:focus-visible { outline: 3px solid #f2b134; outline-offset: 2px; }
 .bar a.own { background: #f2b134; color: #10181c; box-shadow: none; }
-.bar [hidden] { display: none; }
+.bar [hidden], .bar .touch { display: none; }
+@media (pointer: coarse) { .bar .keys { display: none; } .bar .touch { display: inline; } }
 @media (max-width: 600px) { .bar p { order: 9; flex-basis: 100%; } }
 
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
@@ -91,7 +92,7 @@ body { font-family: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", "Nimb
 
   <div class="bar" id="bar">
     <a href="../">&larr; OpenMantel</a>
-    <p>This is what a frame shows. Arrows change photos; tap one for its details.</p>
+    <p>This is what a frame shows. <span class="keys">Arrows change photos; click one for its details.</span><span class="touch">Swipe to change photos; tap one for its details.</span></p>
     <button type="button" id="pause" aria-pressed="false">Pause</button>
     <button type="button" id="fullscreen" hidden>Full screen</button>
     <a class="own" href="../#install">Host your own</a>
@@ -132,6 +133,7 @@ const PHOTOS = [
 const INTERVAL_MS = 6000 // A real frame holds each photo for a minute. A visitor won't.
 const INFO_TIMEOUT_MS = 2 * 60 * 1000
 const IDLE_MS = 3500
+const SWIPE_PX = 50
 
 const frame = document.getElementById('frame')
 const slides = [...document.querySelectorAll('[data-slide]')]
@@ -234,7 +236,26 @@ function wake() {
   idleTimer = setTimeout(() => frame.classList.add('idle'), IDLE_MS)
 }
 
+// A sideways swipe changes the photo: left for the next, right for the one before. A real frame
+// has no touch screen to swipe, but a phone has no arrow keys.
+let swipe = null
+let swipedAt = 0
+frame.addEventListener('pointerdown', (event) => {
+  swipe = event.pointerType === 'mouse' || event.target.closest('.bar') ? null : { id: event.pointerId, x: event.clientX, y: event.clientY }
+})
+frame.addEventListener('pointercancel', () => (swipe = null))
+frame.addEventListener('pointerup', (event) => {
+  if (!swipe || swipe.id !== event.pointerId) return
+  const dx = event.clientX - swipe.x
+  const dy = event.clientY - swipe.y
+  swipe = null
+  if (Math.abs(dx) < SWIPE_PX || Math.abs(dx) < Math.abs(dy) * 1.5) return
+  swipedAt = Date.now()
+  show(current + (dx < 0 ? 1 : -1))
+})
+
 frame.addEventListener('click', (event) => {
+  if (Date.now() - swipedAt < 500) return // The end of a swipe isn't a tap.
   if (event.target.closest('.bar')) return
   if (event.target.closest('.info')) return closeInfo()
   toggleInfo()

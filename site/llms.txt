@@ -1,6 +1,6 @@
 # OpenMantel
 
-> OpenMantel is a free, open source (MIT) digital picture frame that you host yourself. Any computer with a browser and a screen can be a frame. You manage photos and frames from your phone, and the photos stay on your own server.
+> OpenMantel is a free, open source (MIT) digital picture frame that you host yourself. It is a do-it-yourself project for people who self-host. A frame is a monitor with a small computer attached that runs a browser full screen, such as a Raspberry Pi, an Intel N100 mini PC, or a Mac mini. It does not work with store-bought digital photo frames. You manage photos and frames from your phone, and the photos stay on your own server.
 
 OpenMantel runs as one Node.js process with SQLite, on a small VPS or a homelab server, installed with Docker Compose. Frames pair like a TV streaming stick: a frame shows a code and you approve it on your phone. A new install opens in demo mode with 15 sample photos, and switches to live with the owner's first upload. There are no sign-ups, no tracking, and no hosted service.
 

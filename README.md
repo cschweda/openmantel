@@ -2,9 +2,11 @@
 
 # OpenMantel
 
-[OpenMantel](https://openmantel.com) is a free, open source digital picture frame that you host yourself. Put a small computer behind a monitor, point it at your server, and your photos are on display.
+[OpenMantel](https://openmantel.com) is a free, open source digital picture frame for people who like to build and host their own. A frame is a monitor about the size of a picture frame with a small computer behind it, such as a Raspberry Pi or an Intel N100 mini PC. Point it at your server and your photos are on display. There's a [demo](https://openmantel.com/demo/) of what a frame shows.
 
-Store-bought frames do much the same, but they often lock you into an app, a subscription, or someone else's cloud. OpenMantel runs on a small VPS or a homelab server. Your photos stay on your own server, there are no sign-ups and no tracking, and the app never sends anything out. Its only outside request is fetching sample photos for demo mode, and only if you use it.
+It doesn't work with the digital photo frames sold in stores, which are sealed devices that run only their maker's software. It's a do-it-yourself project: you set up the server and each frame yourself, so it suits people at home with Docker and a domain name. If you want to plug in and go, a store-bought frame is the better choice.
+
+Store-bought frames often lock you into an app, a subscription, or someone else's cloud. OpenMantel runs on a small VPS or a homelab server. Your photos stay on your own server, there are no sign-ups and no tracking, and the app never sends anything out. Its only outside request is fetching sample photos for demo mode, and only if you use it.
 
 OpenMantel is part of the [metaincognita](https://metaincognita.com) collection of simulations and tools. It doesn't depend on any of them.
 
@@ -118,7 +120,7 @@ The [self-hosting guide](docs/self-hosting.md) covers homelab setups, updating, 
 
 ## Setting up a frame
 
-Any computer with a browser and a monitor can be a frame. To try it, open your site in a browser. To run a frame full time, use the setup script for that machine. It opens the browser full screen at login, restarts it if it crashes, and keeps the screen awake.
+Any computer with a browser and a monitor can be a frame: a Raspberry Pi, an Intel N100 mini PC, a Mac mini, or an old laptop. Store-bought digital photo frames can't be used. To try it, open your site in a browser. To run a frame full time, use the setup script for that machine. It opens the browser full screen at login, restarts it if it crashes, and keeps the screen awake.
 
 ```bash
 # Mac (needs Google Chrome)
